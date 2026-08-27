@@ -1,6 +1,6 @@
-# Makefile for bkbtl-debugger
+# Makefile for ukncbtl-debugger
 #
-# Mirrors the Debug/Release configurations of bkbtldebug.vcxproj (VS2022).
+# Mirrors the Debug/Release configurations of ukncbtldebug.vcxproj (VS2022).
 #
 # Usage:
 #   make            # Release build (default)
@@ -10,14 +10,14 @@
 #   make run         # Build (release) and run
 #   make run-debug   # Build (debug) and run
 #
-# Binaries are placed in build/<config>/bkbtldebug
+# Binaries are placed in build/<config>/ukncbtldebug
 
 CXX      := g++
 CXXSTD   := -std=c++17
-TARGET   := bkbtldebug
+TARGET   := ukncbtldebug
 
 SRCS := \
-	bkbtldebug.cpp \
+	ukncbtldebug.cpp \
 	Common.cpp \
 	commands.cpp \
 	Emulator.cpp \
@@ -25,6 +25,8 @@ SRCS := \
 	emubase/Board.cpp \
 	emubase/Disasm.cpp \
 	emubase/Floppy.cpp \
+	emubase/Hard.cpp \
+	emubase/Memory.cpp \
 	emubase/Processor.cpp \
 	emubase/SoundAY.cpp \
 	util/BitmapFile.cpp \
