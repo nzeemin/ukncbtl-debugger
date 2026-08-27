@@ -508,8 +508,9 @@ void CmdShowHelp(const ConsoleCommandParams& /*params*/)
         L"  k KEY, key KEY          Click KEY: press, wait, release\n"
         L"  k MOD+KEY, key MOD+KEY  Hold MOD, click KEY, release MOD\n"
         L"                 KEY/MOD = letter, digit, punctuation, named key, or octal scancode\n"
-        L"                 Named keys: ENTER SPACE TAB BACKSPACE LEFT RIGHT UP DOWN RUS LAT VS\n"
-        L"                 REPEAT LOWER UPPER STOP AR2 SHIFT SU (AR2/SHIFT/SU are modifiers)\n"
+        L"                 Named keys: ENTER SPACE TAB BACKSPACE LEFT RIGHT UP DOWN K1..K5\n"
+        L"                 POM UST ISP SBROS STOP AR2 UPR ALF GRAF FIKS SHIFT; keypad NUM0..NUM9\n"
+        L"                 NUM+ NUM- NUM, NUM. NUMENTER (hold AR2/UPR/ALF/GRAF/FIKS/SHIFT as MOD)\n"
         L"  q, quit, exit  Quit the debugger\n";
 }
 
