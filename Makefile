@@ -30,7 +30,8 @@ SRCS := \
 	emubase/Processor.cpp \
 	emubase/SoundAY.cpp \
 	util/BitmapFile.cpp \
-	util/console.cpp
+	util/console.cpp \
+	util/Symbols.cpp
 
 INCLUDES := -I.
 

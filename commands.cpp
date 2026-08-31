@@ -23,6 +23,7 @@
 #include "emubase/Emubase.h"
 #include "util/BitmapFile.h"
 #include "util/console.h"
+#include "util/Symbols.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -86,15 +87,17 @@ CProcessor* GetCurrentProcessor()
 // "continue" commands) but is also used by CmdStepOver defined before it.
 void RunUntilBreakpoint(int maxFrames = 3000);
 
-// Print register name, octal value and binary value -- one line
-void PrintRegisterLine(LPCTSTR strName, uint16_t value)
+// Print register name, octal value and binary value -- one line.
+// symbolSuffix: " <name+offset>" (from Symbols_FormatSuffix), or empty --
+// only really meaningful for PC, but harmless to pass for any register.
+void PrintRegisterLine(LPCTSTR strName, uint16_t value, const std::wstring& symbolSuffix = std::wstring())
 {
     TCHAR bufOctal[7];
     PrintOctalValue(bufOctal, value);
     TCHAR bufBinary[17];
     PrintBinaryValue(bufBinary, value);
 
-    std::wcout << L"  " << strName << L" " << bufOctal << L"  " << bufBinary << std::endl;
+    std::wcout << L"  " << strName << L" " << bufOctal << symbolSuffix << L"  " << bufBinary << std::endl;
 }
 
 // Print one disassembled instruction line.
@@ -103,16 +106,17 @@ void PrintDisassembleLine(uint16_t address, uint16_t value, LPCTSTR instr, LPCTS
 {
     TCHAR bufAddr[7];
     PrintOctalValue(bufAddr, address);
+    std::wstring symbol = Symbols_FormatSuffix(address);
 
     if (okShort)
     {
-        std::wcout << L" " << bufAddr << L" " << instr << L" " << args << std::endl;
+        std::wcout << L" " << bufAddr << symbol << L" " << instr << L" " << args << std::endl;
     }
     else
     {
         TCHAR bufValue[7];
         PrintOctalValue(bufValue, value);
-        std::wcout << L" " << bufAddr << L" " << bufValue << L" " << instr << L" " << args << std::endl;
+        std::wcout << L" " << bufAddr << symbol << L" " << bufValue << L" " << instr << L" " << args << std::endl;
     }
 }
 
@@ -489,6 +493,7 @@ void CmdShowHelp(const ConsoleCommandParams& /*params*/)
         L"                 Modifiers combine in any order, e.g. \"m100260 bytes hex\"\n"
         L"  b              List all breakpoints\n"
         L"  bXXXXXX        Set breakpoint at address XXXXXX\n"
+        L"  b NAME         Set breakpoint at symbol NAME (see \"symbols load\")\n"
         L"  bc             Remove all breakpoints\n"
         L"  bcXXXXXX       Remove breakpoint at address XXXXXX\n"
         L"  t, trace       Toggle instruction tracing to trace.log on/off\n"
@@ -497,6 +502,8 @@ void CmdShowHelp(const ConsoleCommandParams& /*params*/)
         L"  memsave [FILE] Save memory dump as FILE; default memdump.bin\n"
         L"  statesave FILE Save full emulator state (memory, registers, ports) to FILE\n"
         L"  stateload FILE Load full emulator state from FILE\n"
+        L"  symbols load FILE, sym load FILE  Load symbols from a GNU ld map file (-Wl,-Map=...)\n"
+        L"  symbols, sym   List the currently loaded symbol table\n"
         L"  diskN attach FILE, diskN a FILE  Attach floppy image FILE to drive N; N=1..4\n"
         L"  diskN detach, diskN d  Detach floppy image from drive N; N=1..4\n"
         L"  cartN attach FILE, cartN a FILE  Attach 24K ROM cartridge FILE to slot N; N=1..2\n"
@@ -533,6 +540,8 @@ void CmdPrintAllRegisters(const ConsoleCommandParams& /*params*/)
         Console_ColorModified(Emulator_IsRegisterChanged(r));
         std::wcout << bufOctal;
         Console_ColorReset();
+        if (r == 7)  // R7 is PC
+            std::wcout << Symbols_FormatSuffix(pProc->GetReg(r));
         std::wcout << L" ";
     }
     TCHAR bufPSW[7];
@@ -692,7 +701,7 @@ void CmdPrintRegisterPC(const ConsoleCommandParams& /*params*/)
 {
     CProcessor* pProc = GetCurrentProcessor();
     uint16_t value = pProc->GetReg(7);
-    PrintRegisterLine(_T("PC"), value);
+    PrintRegisterLine(_T("PC"), value, Symbols_FormatSuffix(value));
 }
 
 void CmdSetRegisterPC(const ConsoleCommandParams& params)
@@ -798,6 +807,25 @@ void CmdStateLoad(const ConsoleCommandParams& params)
         std::wcout << L"Loaded state " << params.paramFilename << std::endl;
     else
         std::wcout << L"FAILED to load state " << params.paramFilename << std::endl;
+}
+
+// "symbols load FILE" / "sym load FILE" -- load a GNU ld map file (the same
+// one this project's example Makefiles already produce via -Wl,-Map=...)
+// so disasm/registers/breakpoints/"Stopped at" can show "<name+offset>"
+// instead of a bare octal address.
+void CmdLoadSymbols(const ConsoleCommandParams& params)
+{
+    size_t count = Symbols_LoadFromMapFile(params.paramFilename);
+    if (count > 0)
+        std::wcout << L"Loaded " << count << L" symbols from " << params.paramFilename << std::endl;
+    else
+        std::wcout << L"FAILED to load symbols from " << params.paramFilename << std::endl;
+}
+
+// "symbols" / "sym" -- list the currently loaded symbol table.
+void CmdListSymbols(const ConsoleCommandParams& /*params*/)
+{
+    Symbols_PrintAll();
 }
 
 // "disk1 attach FILE" .. "disk4 attach FILE" -- the slot digit is the 5th
@@ -987,10 +1015,11 @@ void RunUntilBreakpoint(int maxFrames)
     CProcessor* pProc = GetCurrentProcessor();
     TCHAR bufAddr[7];
     PrintOctalValue(bufAddr, pProc->GetPC());
+    std::wstring symbol = Symbols_FormatSuffix(pProc->GetPC());
     if (hitBreakpoint)
-        std::wcout << L" Stopped at " << bufAddr << std::endl;
+        std::wcout << L" Stopped at " << bufAddr << symbol << std::endl;
     else
-        std::wcout << L" Stopped at " << bufAddr << L" (no breakpoint hit after "
+        std::wcout << L" Stopped at " << bufAddr << symbol << L" (no breakpoint hit after "
                     << maxFrames << L" frames)" << std::endl;
 }
 
@@ -1303,7 +1332,7 @@ void CmdPrintAllBreakpoints(const ConsoleCommandParams& /*params*/)
         {
             TCHAR bufAddr[7];
             PrintOctalValue(bufAddr, *pbps);
-            std::wcout << L"  " << bufAddr << std::endl;
+            std::wcout << L"  " << bufAddr << Symbols_FormatSuffix(*pbps) << std::endl;
             pbps++;
         }
     }
@@ -1320,7 +1349,28 @@ void CmdSetBreakpointAtAddress(const ConsoleCommandParams& params)
     }
     TCHAR bufAddr[7];
     PrintOctalValue(bufAddr, address);
-    std::wcout << L"Breakpoint set at " << bufAddr << std::endl;
+    std::wcout << L"Breakpoint set at " << bufAddr << Symbols_FormatSuffix(address) << std::endl;
+}
+
+// "b NAME" -- set a breakpoint at a symbol loaded via "symbols load"/"sym
+// load", as an alternative to the raw-address "bXXXXXX" form.
+void CmdSetBreakpointByName(const ConsoleCommandParams& params)
+{
+    uint16_t address;
+    if (!Symbols_FindByName(params.paramFilename, &address))
+    {
+        std::wcout << L" Unknown symbol: " << params.paramFilename << std::endl;
+        return;
+    }
+    bool result = Emulator_AddCPUBreakpoint(address);
+    if (!result)
+    {
+        std::wcout << L" Failed to add breakpoint." << std::endl;
+        return;
+    }
+    TCHAR bufAddr[7];
+    PrintOctalValue(bufAddr, address);
+    std::wcout << L"Breakpoint set at " << bufAddr << L" <" << params.paramFilename << L">" << std::endl;
 }
 
 void CmdRemoveBreakpointAtAddress(const ConsoleCommandParams& params)
@@ -1416,6 +1466,11 @@ const ConsoleCommandStruct ConsoleCommands[] =
     { L"statesave", ARGINFO_FILENAME,   CmdStateSave },              // statesave FILENAME
     { L"stateload", ARGINFO_FILENAME,   CmdStateLoad },              // stateload FILENAME
 
+    { L"symbols load", ARGINFO_FILENAME, CmdLoadSymbols },           // symbols load FILENAME
+    { L"sym load",      ARGINFO_FILENAME, CmdLoadSymbols },          // sym load FILENAME
+    { L"symbols",       ARGINFO_NONE,     CmdListSymbols },          // symbols
+    { L"sym",           ARGINFO_NONE,     CmdListSymbols },          // sym
+
     { L"disk1 attach", ARGINFO_FILENAME, CmdAttachFloppyImage },     // disk1 attach FILENAME
     { L"disk2 attach", ARGINFO_FILENAME, CmdAttachFloppyImage },     // disk2 attach FILENAME
     { L"disk3 attach", ARGINFO_FILENAME, CmdAttachFloppyImage },     // disk3 attach FILENAME
@@ -1473,6 +1528,7 @@ const ConsoleCommandStruct ConsoleCommands[] =
     { L"bc",    ARGINFO_OCT,     CmdRemoveBreakpointAtAddress },  // bcXXXXXX
     { L"bc",    ARGINFO_NONE,    CmdRemoveAllBreakpoints },       // bc
     { L"b",     ARGINFO_OCT,     CmdSetBreakpointAtAddress },     // bXXXXXX
+    { L"b",     ARGINFO_FILENAME, CmdSetBreakpointByName },       // b NAME (symbol, from "symbols load")
     { L"b",     ARGINFO_NONE,    CmdPrintAllBreakpoints },        // b
 };
 

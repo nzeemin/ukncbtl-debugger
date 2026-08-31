@@ -51,6 +51,9 @@
     <ClCompile Include="util\console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="util\Symbols.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="emubase\Hard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -90,6 +93,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="util\console.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\Symbols.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="emubase\Memory.h">

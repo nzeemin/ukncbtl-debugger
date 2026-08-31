@@ -24,6 +24,10 @@ tool exists for the cases where you want to:
   capture state, compare runs),
 - automate things like "boot this disk image for N frames and read what's on screen" without a
   display — the `screentext` command OCRs the framebuffer back into text.
+- debug by symbol name instead of raw octal addresses — `symbols load` reads an ordinary GNU ld
+  map file (`-Wl,-Map=out.map`, no special build step, no object-format change needed: the target
+  executable format doesn't need to carry symbols itself, since this tool reads them out-of-band)
+  and annotates disassembly, registers, and breakpoints with `<name+offset>`.
 
 ## Building
 
@@ -146,8 +150,15 @@ suppressed automatically otherwise).
 |---|---|
 | `b` | List all breakpoints |
 | `bXXXXXX` | Set a breakpoint at `XXXXXX` |
+| `b NAME` | Set a breakpoint at symbol `NAME` (see `symbols load`) |
 | `bc` | Remove all breakpoints |
 | `bcXXXXXX` | Remove the breakpoint at `XXXXXX` |
+
+Once symbols are loaded, every printed address (disassembly, `rpc`/`r`'s PC
+column, breakpoint list, and the "Stopped at" message after `continue`) gets
+a `<name>` or `<name+offset>` suffix for free — the nearest symbol at or
+below that address, so an offset just means "no exact symbol there", not an
+error.
 
 ### Status and tracing
 
@@ -182,6 +193,8 @@ Letters are named by the Latin glyph on the key. Scancodes match UKNCBTL's own
 |---|---|
 | `memsave [FILE]` | Save a full memory dump (default `memdump.bin`) |
 | `statesave FILE` / `stateload FILE` | Save / load full emulator state — memory, registers, ports |
+| `symbols load FILE`, `sym load FILE` | Load symbols from a GNU ld map file (e.g. `-Wl,-Map=out.map`) |
+| `symbols`, `sym` | List the currently loaded symbol table |
 | `diskN attach FILE`, `diskN a FILE` | Attach a floppy image to drive `N` (`1`-`4`) |
 | `diskN detach`, `diskN d` | Detach the floppy image from drive `N` |
 | `cartN attach FILE`, `cartN a FILE` | Attach a 24 KB ROM cartridge to slot `N` (`1`-`2`) |
