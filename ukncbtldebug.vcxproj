@@ -154,6 +154,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="util\BitmapFile.cpp" />
     <ClCompile Include="util\console.cpp" />
+    <ClCompile Include="util\Symbols.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="emubase\Memory.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="util\BitmapFile.h" />
     <ClInclude Include="util\console.h" />
+    <ClInclude Include="util\Symbols.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
